@@ -30,6 +30,16 @@ static Shift makeShift(int x0, int y0, int x1, int y1) {
     return make_pair(mp(x0, y0), mp(x1, y1));
 }
 
+void pixelMul(Pixel& pixel, double valR, double valG, double valB) {
+    colorMul(pixel, RED,   valR);
+    colorMul(pixel, GREEN, valG);
+    colorMul(pixel, BLUE,  valB);
+}
+
+void pixelMul(Pixel& pixel, double value) {
+    pixelMul(pixel, value, value, value);
+}
+
 static void updateWH(uint& w, uint& h, const Shift shift) {
     h -= (sgn(shift.fst.x) == sgn(shift.sec.x) ? 
         max(abs(shift.fst.x), abs(shift.sec.x)) :
@@ -40,7 +50,7 @@ static void updateWH(uint& w, uint& h, const Shift shift) {
 }
 
 static double pixelDiff(Pixel a, Pixel b, Metrics mtype) {
-    return (mtype == MSE ?                                                                  
+    return (mtype == MSE ? 
         sqr(ilevelGet(a) - ilevelGet(b)) :
         levelGet(a) * levelGet(b)
     );

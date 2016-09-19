@@ -1,7 +1,10 @@
 #include "align.h"
+#include "operators.h"
+
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include <cassert>
 
 using std::string;
 using std::min;
@@ -24,6 +27,8 @@ Image align(Image srcImage, bool isPostprocessing, std::string postprocessingTyp
     if (isPostprocessing) {
         if (postprocessingType == "--gray-world") {
             result = gray_world(result);
+        } else if (postprocessingType == "--unsharp") {
+            result = unsharp(result);
         }
     }
 
@@ -45,7 +50,10 @@ Image sobel_y(Image src_image) {
 }
 
 Image unsharp(Image src_image) {
-    return src_image;
+    Matrix<double> kernel = {{-1/6., -2/3., -1/6.},
+                             {-2/3., 13/3., -2/3.},
+                             {-1/6., -2/3., -1/6.}};
+    return custom(src_image, kernel);
 }
 
 Image gray_world(Image srcImage) {
@@ -62,11 +70,9 @@ Image gray_world(Image srcImage) {
     double sum = (Rsum + Gsum + Bsum) / 3;
     for (uint i = 0; i < srcImage.n_rows; ++i) {
         for (uint j = 0; j < srcImage.n_cols; ++j) {
-            colorSet(srcImage(i, j), RED,   min(255., round(colorGet(srcImage(i, j), RED) * sum / Rsum)));
-            colorSet(srcImage(i, j), GREEN, min(255., round(colorGet(srcImage(i, j), GREEN) * sum / Gsum)));
-            colorSet(srcImage(i, j), BLUE,  min(255., round(colorGet(srcImage(i, j), BLUE) * sum / Bsum)));
+            pixelMul(srcImage(i, j), sum / Rsum, sum / Gsum, sum / Bsum);
         }
-    } 
+    }
 
     return srcImage;
 }
@@ -75,12 +81,9 @@ Image resize(Image src_image, double scale) {
     return src_image;
 }
 
-Image custom(Image src_image, Matrix<double> kernel) {
-    // Function custom is useful for making concrete linear filtrations
-    // like gaussian or sobel. So, we assume that you implement custom
-    // and then implement other filtrations using this function.
-    // sobel_x and sobel_y are given as an example.
-    return src_image;
+Image custom(Image srcImage, Matrix<double> kernel) {
+    ConvolutionOperator op(kernel);
+    return srcImage.unary_map(op);
 }
 
 Image autocontrast(Image src_image, double fraction) {
@@ -95,7 +98,7 @@ Image gaussian_separable(Image src_image, double sigma, int radius) {
     return src_image;
 }
 
-Image median(Image src_image, int radius) {
+Image median(Image src_image, int radius) { 
     return src_image;
 }
 
