@@ -6,6 +6,8 @@
 
 //*** MACRO block ***
 
+#define sqr(x) ((x) * (x))
+
 #define _colorSet(pixel, color, value) std::get<color>(pixel) = uint(value)
 #define colorSet(pixel, color, value)  _colorSet(pixel, color, std::min(255, std::max(0, int(value))))
 
@@ -19,11 +21,13 @@
 
 //*** End ***
 
-using std::pair;
-using Shift = pair< std::pair<int, int>, std::pair<int, int> >;
+using Position = std::pair< uint, uint >;
+using Shift    = std::pair< std::pair<int, int>, std::pair<int, int> >;
 
 enum Metrics {MSE, CCORR};
 enum Colors {RED, GREEN, BLUE};
+
+const uint MAX_LVL = 256;
 
 static const int    MAX_SHIFT = 15;
 static const uint   INF  = uint(1e9);

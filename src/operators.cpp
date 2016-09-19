@@ -18,20 +18,53 @@ ConvolutionOperator::ConvolutionOperator(Matrix<double>& _kernel) :
 ConvolutionOperator::~ConvolutionOperator() {};
 
 Pixel ConvolutionOperator::operator() (Image subImage) const {
-    double valR = 0;
-    double valG = 0;
-    double valB = 0;
+    double val[3] = {0, 0, 0};
 
     for (uint x = 0; x < subImage.n_rows; ++x) {
         for (uint y = 0; y < subImage.n_cols; ++y) {
-            valR += icolorGet(subImage(x, y), RED)   * kernel(x, y);
-            valG += icolorGet(subImage(x, y), GREEN) * kernel(x, y);
-            valB += icolorGet(subImage(x, y), BLUE)  * kernel(x, y);
+            val[RED  ] += icolorGet(subImage(x, y), RED)   * kernel(x, y);
+            val[GREEN] += icolorGet(subImage(x, y), GREEN) * kernel(x, y);
+            val[BLUE ] += icolorGet(subImage(x, y), BLUE)  * kernel(x, y);
         }
     }
-    valR /= sum;
-    valG /= sum;
-    valB /= sum;
 
-    return Pixel(valR, valG, valB);
+    return Pixel(val[RED] / sum, val[GREEN] / sum, val[BLUE] / sum);
 }
+
+MedianOperator::MedianOperator(uint _radius) : radius(_radius) {};
+
+MedianOperator::~MedianOperator() {};
+
+Pixel MedianOperator::operator() (Image subImage) const {
+    uint count[3][MAX_LVL] = {{0}};
+
+    for (uint x = 0; x < subImage.n_rows; ++x) {
+        for (uint y = 0; y < subImage.n_cols; ++y) {
+            ++count[RED  ][colorGet(subImage(x, y), RED  )];
+            ++count[GREEN][colorGet(subImage(x, y), GREEN)];
+            ++count[BLUE ][colorGet(subImage(x, y), BLUE )];
+        }
+    }
+
+    uint result[3];
+
+    uint med = sqr(2 * radius + 1) / 2;
+    for (uint color = RED; color <= BLUE; ++color) {
+        uint sum = 0;
+        for (uint lvl = 0; lvl < MAX_LVL; ++lvl) {
+            sum += count[color][lvl];
+            if (sum > med) {
+                result[color] = lvl;
+                break;
+            }
+        }
+    }
+    
+    return Pixel(result[RED], result[GREEN], result[BLUE]);
+}
+
+
+
+
+
+

@@ -18,10 +18,6 @@ using std::abs;
 using std::cout;
 using std::endl;
 
-static int sqr(int x) {
-    return x * x;
-}
-
 static int sgn(int x) {
     return (x == 0 ? 0 : (x > 0 ? 1 : -1));
 }

@@ -98,11 +98,13 @@ Image gaussian_separable(Image src_image, double sigma, int radius) {
     return src_image;
 }
 
-Image median(Image src_image, int radius) { 
-    return src_image;
+Image median(Image srcImage, int radius) {
+    MedianOperator op(radius);
+    return srcImage.unary_map(op);
 }
 
-Image median_linear(Image src_image, int radius) {
+Image median_linear(Image src_image, int radius) { 
+    
     return src_image;
 }
 
