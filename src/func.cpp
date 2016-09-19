@@ -3,12 +3,15 @@
 #include <cassert>
 #include <algorithm>
 
-#define mp std::make_pair
-#define x  first
-#define y  second
+#define mp make_pair
+#define x first
+#define y second
+#define fst first
+#define sec second
 
 #define MAX(a, b, c) std::max(std::max(a, b), c)
 
+using std::make_pair;
 using std::max;
 using std::abs;
 
@@ -23,63 +26,90 @@ static int sgn(int x) {
     return (x == 0 ? 0 : (x > 0 ? 1 : -1));
 }
 
+static Shift makeShift(int x0, int y0, int x1, int y1) {
+    return make_pair(mp(x0, y0), mp(x1, y1));
+}
+
+static void updateWH(uint& w, uint& h, const Shift shift) {
+    h -= (sgn(shift.fst.x) == sgn(shift.sec.x) ? 
+        max(abs(shift.fst.x), abs(shift.sec.x)) :
+        abs(shift.fst.x) + abs(shift.sec.x));
+    w -= (sgn(shift.fst.y) == sgn(shift.sec.y) ?
+        max(abs(shift.fst.y), abs(shift.sec.y)) :
+        abs(shift.fst.y) + abs(shift.sec.y));                       
+}
+
+static double pixelDiff(Pixel a, Pixel b, Metrics mtype) {
+    return (mtype == MSE ?                                                                  
+        sqr(ilevelGet(a) - ilevelGet(b)) :
+        levelGet(a) * levelGet(b)
+    );
+}
+
 // must remember about static buf, if you want to reuse bestShift()
-static double calcDiff(const Image& A, const Image& B, const int sx, const int sy, const Metrics mtype, const int numBuf = -1) {
-    static double buf[2][4 * MAX_SHIFT + 1][4 * MAX_SHIFT + 1]; 
+static double imagesDiff(const Image& A, const Image& B, const pair<uint, uint> size, const Shift shift, const Metrics mtype, const int numBuf = -1) {
+    static double buf[3][4 * MAX_SHIFT + 1][4 * MAX_SHIFT + 1]; 
 
-    if (numBuf != -1 && buf[numBuf][2 * MAX_SHIFT + sx][2 * MAX_SHIFT + sy] > EPS) {
-        return buf[numBuf][2 * MAX_SHIFT + sx][2 * MAX_SHIFT + sy] - INFD;
+    uint dx = shift.fst.x - shift.sec.x;
+    uint dy = shift.fst.y - shift.sec.y;
+
+    if (numBuf != -1 && buf[numBuf][2 * MAX_SHIFT + dx][2 * MAX_SHIFT + dy] > EPS) {
+        return buf[numBuf][2 * MAX_SHIFT + dx][2 * MAX_SHIFT + dy] - INFD;
     }
-
-    assert(A.n_cols == B.n_cols && A.n_rows == B.n_rows);
-
-    uint h = A.n_rows - abs(sx);
-    uint w = A.n_cols - abs(sy);
-
-    uint dx = max(0, sx);
-    uint dy = max(0, sy);
+    
+    uint h = size.fst;
+    uint w = size.sec;
 
     double res = 0;
     for (uint x = 0; x < h; ++x) {
         for (uint y = 0; y < w; ++y) {
-             res += (mtype == MSE ? 
-                sqr(int(lvlGet(A(x + dx, y + dy))) - int(lvlGet(B(x + dx - sx, y + dy - sy)))) :
-                lvlGet(A(x + dx, y + dy)) * lvlGet(B(x + dx - sx, y + dy - sy))
-                );
+             res += pixelDiff(A(x + shift.fst.x, y + shift.fst.y), B(x + shift.sec.x, y + shift.sec.y), mtype);
         }
     }
+    res = (mtype == MSE ? res / (w * h) : res * (w * h));
 
     if (numBuf != -1) {
-        buf[numBuf][2 * MAX_SHIFT + sx][2 * MAX_SHIFT + sy] = (mtype == MSE ? double(res) / (w * h) : res) + INFD;
+        buf[numBuf][2 * MAX_SHIFT + dx][2 * MAX_SHIFT + dy] = res + INFD;
     } 
-    return (mtype == MSE ? double(res) / (w * h) : res);
+    return res;
+}
+
+static double imagesDiff(const Image& A, const Image& B, const Image& C, const Shift& shift, const Metrics mtype) {
+    uint w = A.n_cols;
+    uint h = A.n_rows;
+    updateWH(w, h, shift);
+
+    int shiftAx = MAX(0, shift.fst.x, shift.sec.x);
+    int shiftAy = MAX(0, shift.fst.y, shift.sec.y);
+
+    int shiftBx = shiftAx - shift.fst.x;
+    int shiftBy = shiftAy - shift.fst.y;
+    int shiftCx = shiftAx - shift.sec.x;
+    int shiftCy = shiftAy - shift.sec.y;
+
+    return imagesDiff(A, B, make_pair(h, w), makeShift(shiftAx, shiftAy, shiftBx, shiftBy), mtype, 0) +
+           imagesDiff(A, C, make_pair(h, w), makeShift(shiftAx, shiftAy, shiftCx, shiftCy), mtype, 1) +
+           imagesDiff(B, C, make_pair(h, w), makeShift(shiftBx, shiftBy, shiftCx, shiftCy), mtype, 2);
 }
 
 Shift bestShift(const Image& R, const Image& G, const Image& B, const Metrics mtype) {
-    Shift  optShift = std::make_pair(mp(INF, INF), mp(INF, INF));
+    assert(R.n_rows == G.n_rows && R.n_rows == B.n_rows);
+    assert(R.n_cols == G.n_cols && R.n_cols == B.n_cols);
+    
+    Shift  optShift = makeShift(INF, INF, INF, INF);
     double optVal = (mtype == MSE ? INF : -INF);    
 
     for (int x0 = -MAX_SHIFT; x0 <= MAX_SHIFT; ++x0)
     for (int y0 = -MAX_SHIFT; y0 <= MAX_SHIFT; ++y0) {
-        double resRG = calcDiff(R, G, x0, y0, mtype);
- 
         for (int x1 = -MAX_SHIFT; x1 <= MAX_SHIFT; ++x1)       
         for (int y1 = -MAX_SHIFT; y1 <= MAX_SHIFT; ++y1) {
-            double resRB = calcDiff(R, B, x1, y1, mtype, 0);
-            double resGB = calcDiff(G, B, x0 - x1, y0 - y1, mtype, 1);
-            //double resGB = calcDiff(G, B, x1 - x0, y1 - y0, mtype, 1);
+            
+            Shift shift = makeShift(x0, y0, x1, y1);
+            double diff = imagesDiff(R, G, B, shift, mtype);
 
-            double sum = resRG + resRB + resGB;
-            //double sum = resRB;
-            if ((optVal < sum) ^ (mtype == MSE)) {
-                optVal = sum;
-                /*
-                if (sum < 5400) {
-                    cout << resAB << " " << resAC << " " << resBC << endl;
-                    cout << x0 << " " << y0 << " : " << x1 << " " << y1 << endl;
-                }
-                */
-                optShift = std::make_pair(mp(x0, y0), mp(x1, y1)); 
+            if ((optVal < diff) ^ (mtype == MSE)) {
+                optVal = diff;
+                optShift = makeShift(x0, y0, x1, y1); 
             }
         }
     }
@@ -92,23 +122,19 @@ Image unit(const Image& R, const Image& G, const Image& B, const Shift& shift) {
     assert(R.n_rows == G.n_rows && R.n_rows == B.n_rows);
     assert(R.n_cols == G.n_cols && R.n_cols == B.n_cols);
 
-    uint h = R.n_rows - (sgn(shift.first.x) == sgn(shift.second.x) ? 
-        max(abs(shift.first.x), abs(shift.second.x)) :
-        abs(shift.first.x) + abs(shift.second.x));
-    uint w = R.n_cols - (sgn(shift.first.y) == sgn(shift.second.y) ?
-        max(abs(shift.first.y), abs(shift.second.y)) :
-        abs(shift.first.y) + abs(shift.second.y));
-
+    uint w = R.n_cols; 
+    uint h = R.n_rows;
+    updateWH(w, h, shift);
     Image result(h, w);
     
-    uint dx = MAX(0, shift.first.x, shift.second.x);
-    uint dy = MAX(0, shift.first.y, shift.second.y);
+    uint dx = MAX(0, shift.fst.x, shift.sec.x);
+    uint dy = MAX(0, shift.fst.y, shift.sec.y);
 
     for (uint x = 0; x < h; ++x) {
         for (uint y = 0; y < w; ++y) {
-            colorSet(result(x, y), RED,   lvlGet(R(x + dx, y + dy)));
-            colorSet(result(x, y), GREEN, lvlGet(G(x + dx - shift.first.x,  y + dy - shift.first.y)));
-            colorSet(result(x, y), BLUE,  lvlGet(B(x + dx - shift.second.x, y + dy - shift.second.y)));
+            colorSet(result(x, y), RED,   levelGet(R(x + dx, y + dy)));
+            colorSet(result(x, y), GREEN, levelGet(G(x + dx - shift.first.x,  y + dy - shift.first.y)));
+            colorSet(result(x, y), BLUE,  levelGet(B(x + dx - shift.second.x, y + dy - shift.second.y)));
         }
     }
 
