@@ -7,11 +7,6 @@
 #define x  first
 #define y  second
 
-#define colorSet(pixel, color, value) std::get<color>(pixel) = value
-#define colorGet(pixel, color)        uint(std::get<color>(pixel))
-#define lvlGet(pixel)                 colorGet(pixel, 0)
-
-#define sgn(x) (x == 0 ? 0 : (x > 0 ? 1 : -1))
 #define MAX(a, b, c) std::max(std::max(a, b), c)
 
 using std::max;
@@ -24,8 +19,12 @@ static int sqr(int x) {
     return x * x;
 }
 
+static int sgn(int x) {
+    return (x == 0 ? 0 : (x > 0 ? 1 : -1));
+}
+
 // must remember about static buf, if you want to reuse bestShift()
-static double calcDiff(const Image& A, const Image& B, int sx, int sy, Metrics mtype, int numBuf = -1) {
+static double calcDiff(const Image& A, const Image& B, const int sx, const int sy, const Metrics mtype, const int numBuf = -1) {
     static double buf[2][4 * MAX_SHIFT + 1][4 * MAX_SHIFT + 1]; 
 
     if (numBuf != -1 && buf[numBuf][2 * MAX_SHIFT + sx][2 * MAX_SHIFT + sy] > EPS) {
@@ -56,7 +55,7 @@ static double calcDiff(const Image& A, const Image& B, int sx, int sy, Metrics m
     return (mtype == MSE ? double(res) / (w * h) : res);
 }
 
-Shift bestShift(const Image& R, const Image& G, const Image& B, Metrics mtype) {
+Shift bestShift(const Image& R, const Image& G, const Image& B, const Metrics mtype) {
     Shift  optShift = std::make_pair(mp(INF, INF), mp(INF, INF));
     double optVal = (mtype == MSE ? INF : -INF);    
 
@@ -89,7 +88,7 @@ Shift bestShift(const Image& R, const Image& G, const Image& B, Metrics mtype) {
     return optShift;
 }
 
-Image unit(const Image& R, const Image& G, const Image& B, Shift shift) {
+Image unit(const Image& R, const Image& G, const Image& B, const Shift& shift) {
     assert(R.n_rows == G.n_rows && R.n_rows == B.n_rows);
     assert(R.n_cols == G.n_cols && R.n_cols == B.n_cols);
 
@@ -119,5 +118,4 @@ Image unit(const Image& R, const Image& G, const Image& B, Shift shift) {
 #undef x
 #undef y
 #undef mp
-#undef sgn
 #undef MAX

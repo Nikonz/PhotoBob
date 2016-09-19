@@ -1,7 +1,10 @@
 #include "align.h"
 #include <string>
+#include <cmath>
+#include <algorithm>
 
 using std::string;
+using std::min;
 using std::cout;
 using std::endl;
 
@@ -16,16 +19,15 @@ Image align(Image srcImage, bool isPostprocessing, std::string postprocessingTyp
     Image R = srcImage.submatrix(h * 2, 0, h, w);
 
     // metrics: MSE or CCORR
-    return unit(R, G, B, bestShift(R, G, B, MSE));
-  
-    /* 
-    #define x first
-    #define y second 
-    Shift sh = bestShift(R, G, B, MSE);
-    cout << sh.x.x << " " << sh.x.y << " : " << sh.y.x << " " << sh.y.y << endl;
-    #define mp std::make_pair
-    return unit(R, G, B, mp(mp(-5, -1), mp(-9, -3)));
-    */
+    Image result = unit(R, G, B, bestShift(R, G, B, MSE));
+
+    if (isPostprocessing) {
+        if (postprocessingType == "--gray-world") {
+            result = gray_world(result);
+        }
+    }
+
+    return result;
 }
 
 Image sobel_x(Image src_image) {
@@ -46,8 +48,27 @@ Image unsharp(Image src_image) {
     return src_image;
 }
 
-Image gray_world(Image src_image) {
-    return src_image;
+Image gray_world(Image srcImage) {
+    double Rsum = 0, Gsum = 0, Bsum = 0;
+
+    for (uint i = 0; i < srcImage.n_rows; ++i) {
+        for (uint j = 0; j < srcImage.n_cols; ++j) {
+            Rsum += colorGet(srcImage(i, j), RED);
+            Gsum += colorGet(srcImage(i, j), GREEN);
+            Bsum += colorGet(srcImage(i, j), BLUE);
+        }
+    }
+
+    double sum = (Rsum + Gsum + Bsum) / 3;
+    for (uint i = 0; i < srcImage.n_rows; ++i) {
+        for (uint j = 0; j < srcImage.n_cols; ++j) {
+            colorSet(srcImage(i, j), RED,   min(255., round(colorGet(srcImage(i, j), RED) * sum / Rsum)));
+            colorSet(srcImage(i, j), GREEN, min(255., round(colorGet(srcImage(i, j), GREEN) * sum / Gsum)));
+            colorSet(srcImage(i, j), BLUE,  min(255., round(colorGet(srcImage(i, j), BLUE) * sum / Bsum)));
+        }
+    } 
+
+    return srcImage;
 }
 
 Image resize(Image src_image, double scale) {
