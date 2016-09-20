@@ -54,25 +54,36 @@ static uint pixelDiff(Pixel a, Pixel b, Metrics mtype) {
 }
 
 // must remember about static buf, if you want to reuse bestShift()
-static dblong imagesDiff(const Image& A, const Image& B, const Size size, const Shift shift, const Metrics mtype, const int numBuf = -1) {
+static dblong imagesDiff(const Image& A, const Image& B, const SingleShift shift, const Metrics mtype, const int numBuf = -1) {
     static dblong buf[3][2 * MAX_SHIFT + 1][2 * MAX_SHIFT + 1]; 
 
-    int dx = shift.fst.x - shift.sec.x;
-    int dy = shift.fst.y - shift.sec.y;
+    int dx = shift.x;
+    int dy = shift.y;
 
     if (numBuf != -1 && buf[numBuf][MAX_SHIFT + dx][MAX_SHIFT + dy] > EPS) {
         return buf[numBuf][MAX_SHIFT + dx][MAX_SHIFT + dy] - 1;
-    }
-    
-    uint h = size.fst;
-    uint w = size.sec;
+    } 
+
+    uint h  = A.n_rows;
+    uint w  = A.n_cols;
+    uint dh = h * FAKE_BRD;
+    uint dw = w * FAKE_BRD;
+
+    Image subA = A.submatrix(dh, dw, h - 2 * dh, w - 2 * dw);
+    Image subB = B.submatrix(dh, dw, h - 2 * dh, w - 2 * dw);
+
+    h = subA.n_rows;
+    w = subA.n_cols;
 
     uintl res = 0;
-    for (uint x = 0; x < h; ++x) {
-        for (uint y = 0; y < w; ++y) {
-             res += pixelDiff(A(x + shift.fst.x, y + shift.fst.y), B(x + shift.sec.x, y + shift.sec.y), mtype);
+    for (uint x = max(0, dx) ; x < h - max(0, -dx); ++x) {
+        for (uint y = max(0, dy); y < w - max(0, -dy); ++y) {
+            res += pixelDiff(subA(x, y), subB(x - dx, y - dy), mtype);
         }
     }
+    h -= abs(dx);
+    w -= abs(dy);
+
     dblong result = (mtype == MSE ? dblong(res) / (w * h) : res);
 
     if (numBuf != -1) {
@@ -81,22 +92,14 @@ static dblong imagesDiff(const Image& A, const Image& B, const Size size, const 
     return result;
 }
 
+static dblong imagesDiff(const Image& A, const Image& B, const Shift& shift, const Metrics mtype, const int numBuf = -1) {
+    return imagesDiff(A, B, make_pair(shift.sec.x - shift.fst.x, shift.sec.y - shift.fst.y), mtype, numBuf);
+}
+
 static dblong imagesDiff(const Image& A, const Image& B, const Image& C, const Shift& shift, const Metrics mtype) {
-    uint w = A.n_cols;
-    uint h = A.n_rows;
-    updateWH(w, h, shift);
-
-    int shiftAx = MAX(0, shift.fst.x, shift.sec.x);
-    int shiftAy = MAX(0, shift.fst.y, shift.sec.y);
-
-    int shiftBx = shiftAx - shift.fst.x;
-    int shiftBy = shiftAy - shift.fst.y;
-    int shiftCx = shiftAx - shift.sec.x;
-    int shiftCy = shiftAy - shift.sec.y;
-
-    return imagesDiff(A, B, make_pair(h, w), makeShift(shiftAx, shiftAy, shiftBx, shiftBy), mtype, 0) +
-           imagesDiff(A, C, make_pair(h, w), makeShift(shiftAx, shiftAy, shiftCx, shiftCy), mtype, 1) +
-           imagesDiff(B, C, make_pair(h, w), makeShift(shiftBx, shiftBy, shiftCx, shiftCy), mtype, 2);
+    return imagesDiff(A, B, shift.fst, mtype, 0) +
+           imagesDiff(A, C, shift.sec, mtype, 1) +
+           imagesDiff(B, C, shift, mtype, 2);
 }
 
 Shift bestShift(const Image& R, const Image& G, const Image& B, const Metrics mtype) {

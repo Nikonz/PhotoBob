@@ -24,9 +24,10 @@
 using uintl    = long long;
 using dblong   = long double;
 
-using Size     = std::pair< uint, uint >;
-using Position = std::pair< uint, uint >;
-using Shift    = std::pair< std::pair<int, int>, std::pair<int, int> >;
+using Size        = std::pair< uint, uint >;
+using Position    = std::pair< uint, uint >;
+using SingleShift = std::pair< int, int >;
+using Shift       = std::pair< SingleShift, SingleShift >;
 
 enum Metrics {MSE, CCORR};
 enum Colors {RED, GREEN, BLUE};
@@ -34,10 +35,11 @@ enum Colors {RED, GREEN, BLUE};
 const uint MAX_LVL = 256;
 const uint DEF_CLR = 0;
 
-static const int    MAX_SHIFT = 11;
+static const int    MAX_SHIFT = 15;
 static const uint   INF  = uint(1e9);
 static const uintl  INFL = uintl(1e14);
 static const double EPS  = 1e-8;
+static const double FAKE_BRD = 0.025; // * 100%
 
 void pixelMul(Pixel& pixel, double valR, double valG, double valB);
 void pixelMul(Pixel& pixel, double value);
