@@ -21,6 +21,10 @@
 
 //*** End ***
 
+using uintl    = long long;
+using dblong   = long double;
+
+using Size     = std::pair< uint, uint >;
 using Position = std::pair< uint, uint >;
 using Shift    = std::pair< std::pair<int, int>, std::pair<int, int> >;
 
@@ -28,10 +32,11 @@ enum Metrics {MSE, CCORR};
 enum Colors {RED, GREEN, BLUE};
 
 const uint MAX_LVL = 256;
+const uint DEF_CLR = 0;
 
-static const int    MAX_SHIFT = 15;
+static const int    MAX_SHIFT = 11;
 static const uint   INF  = uint(1e9);
-static const double INFD = 1e14;
+static const uintl  INFL = uintl(1e14);
 static const double EPS  = 1e-8;
 
 void pixelMul(Pixel& pixel, double valR, double valG, double valB);

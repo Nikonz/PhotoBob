@@ -12,6 +12,7 @@
 #define MAX(a, b, c) std::max(std::max(a, b), c)
 
 using std::make_pair;
+using std::min;
 using std::max;
 using std::abs;
 
@@ -45,7 +46,7 @@ static void updateWH(uint& w, uint& h, const Shift shift) {
         abs(shift.fst.y) + abs(shift.sec.y));                       
 }
 
-static double pixelDiff(Pixel a, Pixel b, Metrics mtype) {
+static uint pixelDiff(Pixel a, Pixel b, Metrics mtype) {
     return (mtype == MSE ? 
         sqr(ilevelGet(a) - ilevelGet(b)) :
         levelGet(a) * levelGet(b)
@@ -53,34 +54,34 @@ static double pixelDiff(Pixel a, Pixel b, Metrics mtype) {
 }
 
 // must remember about static buf, if you want to reuse bestShift()
-static double imagesDiff(const Image& A, const Image& B, const pair<uint, uint> size, const Shift shift, const Metrics mtype, const int numBuf = -1) {
-    static double buf[3][4 * MAX_SHIFT + 1][4 * MAX_SHIFT + 1]; 
+static dblong imagesDiff(const Image& A, const Image& B, const Size size, const Shift shift, const Metrics mtype, const int numBuf = -1) {
+    static dblong buf[3][2 * MAX_SHIFT + 1][2 * MAX_SHIFT + 1]; 
 
-    uint dx = shift.fst.x - shift.sec.x;
-    uint dy = shift.fst.y - shift.sec.y;
+    int dx = shift.fst.x - shift.sec.x;
+    int dy = shift.fst.y - shift.sec.y;
 
-    if (numBuf != -1 && buf[numBuf][2 * MAX_SHIFT + dx][2 * MAX_SHIFT + dy] > EPS) {
-        return buf[numBuf][2 * MAX_SHIFT + dx][2 * MAX_SHIFT + dy] - INFD;
+    if (numBuf != -1 && buf[numBuf][MAX_SHIFT + dx][MAX_SHIFT + dy] > EPS) {
+        return buf[numBuf][MAX_SHIFT + dx][MAX_SHIFT + dy] - 1;
     }
     
     uint h = size.fst;
     uint w = size.sec;
 
-    double res = 0;
+    uintl res = 0;
     for (uint x = 0; x < h; ++x) {
         for (uint y = 0; y < w; ++y) {
              res += pixelDiff(A(x + shift.fst.x, y + shift.fst.y), B(x + shift.sec.x, y + shift.sec.y), mtype);
         }
     }
-    res = (mtype == MSE ? res / (w * h) : res * (w * h));
+    dblong result = (mtype == MSE ? dblong(res) / (w * h) : res);
 
     if (numBuf != -1) {
-        buf[numBuf][2 * MAX_SHIFT + dx][2 * MAX_SHIFT + dy] = res + INFD;
+        buf[numBuf][MAX_SHIFT + dx][MAX_SHIFT + dy] = result + 1;
     } 
-    return res;
+    return result;
 }
 
-static double imagesDiff(const Image& A, const Image& B, const Image& C, const Shift& shift, const Metrics mtype) {
+static dblong imagesDiff(const Image& A, const Image& B, const Image& C, const Shift& shift, const Metrics mtype) {
     uint w = A.n_cols;
     uint h = A.n_rows;
     updateWH(w, h, shift);
@@ -103,15 +104,15 @@ Shift bestShift(const Image& R, const Image& G, const Image& B, const Metrics mt
     assert(R.n_cols == G.n_cols && R.n_cols == B.n_cols);
     
     Shift  optShift = makeShift(INF, INF, INF, INF);
-    double optVal = (mtype == MSE ? INF : -INF);    
+    dblong optVal = (mtype == MSE ? INFL : -1);    
 
     for (int x0 = -MAX_SHIFT; x0 <= MAX_SHIFT; ++x0)
     for (int y0 = -MAX_SHIFT; y0 <= MAX_SHIFT; ++y0) {
-        for (int x1 = -MAX_SHIFT; x1 <= MAX_SHIFT; ++x1)       
-        for (int y1 = -MAX_SHIFT; y1 <= MAX_SHIFT; ++y1) {
+        for (int x1 = max(0, x0) - MAX_SHIFT; x1 <= MAX_SHIFT + min(0, x0); ++x1)       
+        for (int y1 = max(0, y0) - MAX_SHIFT; y1 <= MAX_SHIFT + min(0, y0); ++y1) {
             
             Shift shift = makeShift(x0, y0, x1, y1);
-            double diff = imagesDiff(R, G, B, shift, mtype);
+            dblong diff = imagesDiff(R, G, B, shift, mtype);
 
             if ((optVal < diff) ^ (mtype == MSE)) {
                 optVal = diff;
@@ -120,6 +121,8 @@ Shift bestShift(const Image& R, const Image& G, const Image& B, const Metrics mt
         }
     }
     cout << optVal << endl;
+    cout << optShift.fst.x << " " << optShift.fst.y <<
+         " : " << optShift.sec.x << " " << optShift.sec.y << endl;
 
     return optShift;
 }
@@ -147,7 +150,3 @@ Image unit(const Image& R, const Image& G, const Image& B, const Shift& shift) {
     return result;
 }
 
-#undef x
-#undef y
-#undef mp
-#undef MAX
