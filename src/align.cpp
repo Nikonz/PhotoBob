@@ -1,13 +1,16 @@
 #include "align.h"
 #include "operators.h"
+#include "other_types.h"
 
 #include <string>
+#include <vector>
 #include <cmath>
 #include <algorithm>
 #include <cassert>
 
 using std::string;
 using std::min;
+using std::tie;
 using std::cout;
 using std::endl;
 
@@ -103,13 +106,71 @@ Image median(Image srcImage, int radius) {
     return srcImage.unary_map(op);
 }
 
-Image median_linear(Image src_image, int radius) { 
-    
-    return src_image;
+Image median_linear(Image srcImage, int radius) { 
+    static Counter counter;
+
+    if (2 * uint(radius) > srcImage.n_rows || 2 * uint(radius) > srcImage.n_cols) {
+        return srcImage;
+    }
+
+    Image result(srcImage.n_rows, srcImage.n_cols);
+
+    for (uint x = radius; x < srcImage.n_rows - radius; ++x) {
+        for (uint y = 0; y < 2 * uint(radius); ++y) {
+            counter.update(srcImage.submatrix(x - radius, y, 2 * radius + 1, 1));
+        }
+
+        for (uint y = radius; y < srcImage.n_cols - radius; ++y) {
+            counter.update(srcImage.submatrix(x - radius, y + radius, 2 * radius + 1, 1));
+            result(x, y) = counter.getMedianPixel();
+            counter.update(srcImage.submatrix(x - radius, y - radius, 2 * radius + 1, 1), true);
+        }
+
+        counter.reset();
+    }
+
+    return result;
 }
 
-Image median_const(Image src_image, int radius) {
-    return src_image;
+Image median_const(Image srcImage, int radius) {
+    static Counter counter;
+
+    if (2 * uint(radius) > srcImage.n_rows || 2 * uint(radius) > srcImage.n_cols) {
+        return srcImage;
+    }
+
+    std::vector <Counter> hist(srcImage.n_cols);
+    Image result(srcImage.n_rows, srcImage.n_cols);
+
+    for (uint y = 0; y < srcImage.n_cols; ++y) {
+        hist[y].update(srcImage.submatrix(0, y, 2 * radius, 1));
+    }
+
+    for (uint x = radius; x < srcImage.n_rows - radius; ++x) {
+        for (uint y = 0; y < 2 * uint(radius); ++y) {
+            hist[y].update(srcImage(x + radius, y));
+            counter.update(hist[y]);
+        }
+
+        for (uint y = radius; y < srcImage.n_cols - radius; ++y) {
+            hist[y + radius].update(srcImage(x + radius, y + radius));
+            counter.update(hist[y + radius]);
+
+            result(x, y) = counter.getMedianPixel();
+
+            counter.update(hist[y - radius], true);
+            hist[y - radius].update(srcImage(x - radius, y - radius), true);
+        }
+
+        for (uint dy = 0; dy < 2 * uint(radius); ++dy) {
+            uint y = srcImage.n_cols - dy - 1;
+            hist[y].update(srcImage(x - radius, y), true);
+        }
+
+        counter.reset();
+    }
+
+    return result;
 }
 
 Image canny(Image src_image, int threshold1, int threshold2) {

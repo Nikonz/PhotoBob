@@ -41,8 +41,12 @@ static const uintl  INFL = uintl(1e14);
 static const double EPS  = 1e-8;
 static const double FAKE_BRD = 0.025; // * 100%
 
-void pixelMul(Pixel& pixel, double valR, double valG, double valB);
-void pixelMul(Pixel& pixel, double value);
+void  pixelMul(Pixel& pixel, double valR, double valG, double valB);
+void  pixelMul(Pixel& pixel, double value);
+Pixel pixelSum(const Image image);
+
+uint  getMedianLvl  (const uint (&count)[MAX_LVL], const uint median);
+Pixel getMedianPixel(const uint (&count)[3][MAX_LVL], const uint median);
 
 Shift bestShift(const Image& R, const Image& G, const Image& B, const Metrics mtype);
 Image unit     (const Image& R, const Image& G, const Image& B, const Shift& shift);

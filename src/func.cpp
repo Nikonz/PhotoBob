@@ -37,6 +37,39 @@ void pixelMul(Pixel& pixel, double value) {
     pixelMul(pixel, value, value, value);
 }
 
+uint getMedianLvl(const uint (&count)[MAX_LVL], const uint median) {
+    uint sum = 0;
+    for (uint lvl = 0; lvl < MAX_LVL; ++lvl) {
+        sum += count[lvl];
+        if (sum > median) {
+            return lvl;
+        } 
+    }
+
+    return 255;
+}
+
+Pixel getMedianPixel(const uint (&count)[3][MAX_LVL], const uint median) {
+    uint res[3];
+    for (uint color = RED; color <= BLUE; ++color) {
+        res[color] = getMedianLvl(count[color], median);
+    }
+    return Pixel(res[RED], res[GREEN], res[BLUE]);
+}
+
+Pixel pixelSum(const Image image) {
+    uint res[3] = {0};
+
+    for (uint x = 0; x < image.n_rows; ++x) {
+        for (uint y = 0; y < image.n_cols; ++y) {
+            res[RED  ] += colorGet(image(x, y), RED);
+            res[GREEN] += colorGet(image(x, y), GREEN);
+            res[BLUE ] += colorGet(image(x, y), BLUE);
+        }
+    }
+    return Pixel(res[RED], res[GREEN], res[BLUE]);
+}
+
 static void updateWH(uint& w, uint& h, const Shift shift) {
     h -= (sgn(shift.fst.x) == sgn(shift.sec.x) ? 
         max(abs(shift.fst.x), abs(shift.sec.x)) :

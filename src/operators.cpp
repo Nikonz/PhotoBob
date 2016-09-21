@@ -1,5 +1,6 @@
 #include "operators.h"
 #include "func.h"
+#include "other_types.h"
 #include <cassert>
 
 ConvolutionOperator::ConvolutionOperator(Matrix<double>& _kernel) :
@@ -36,35 +37,9 @@ MedianOperator::MedianOperator(uint _radius) : radius(_radius) {};
 MedianOperator::~MedianOperator() {};
 
 Pixel MedianOperator::operator() (Image subImage) const {
-    uint count[3][MAX_LVL] = {{0}};
+    Counter counter;
 
-    for (uint x = 0; x < subImage.n_rows; ++x) {
-        for (uint y = 0; y < subImage.n_cols; ++y) {
-            ++count[RED  ][colorGet(subImage(x, y), RED  )];
-            ++count[GREEN][colorGet(subImage(x, y), GREEN)];
-            ++count[BLUE ][colorGet(subImage(x, y), BLUE )];
-        }
-    }
+    counter.update(subImage);
 
-    uint result[3];
-
-    uint med = sqr(2 * radius + 1) / 2;
-    for (uint color = RED; color <= BLUE; ++color) {
-        uint sum = 0;
-        for (uint lvl = 0; lvl < MAX_LVL; ++lvl) {
-            sum += count[color][lvl];
-            if (sum > med) {
-                result[color] = lvl;
-                break;
-            }
-        }
-    }
-    
-    return Pixel(result[RED], result[GREEN], result[BLUE]);
+    return counter.getMedianPixel();
 }
-
-
-
-
-
-
