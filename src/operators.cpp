@@ -32,14 +32,3 @@ Pixel ConvolutionOperator::operator() (Image subImage) const {
     return Pixel(val[RED] / sum, val[GREEN] / sum, val[BLUE] / sum);
 }
 
-MedianOperator::MedianOperator(uint _radius) : radius(_radius) {};
-
-MedianOperator::~MedianOperator() {};
-
-Pixel MedianOperator::operator() (Image subImage) const {
-    Counter counter;
-
-    counter.update(subImage);
-
-    return counter.getMedianPixel();
-}

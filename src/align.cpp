@@ -9,6 +9,7 @@
 #include <cassert>
 
 using std::string;
+using std::max;
 using std::min;
 using std::tie;
 using std::cout;
@@ -102,28 +103,43 @@ Image gaussian_separable(Image src_image, double sigma, int radius) {
 }
 
 Image median(Image srcImage, int radius) {
-    MedianOperator op(radius);
-    return srcImage.unary_map(op);
+    Counter counter;
+    Image result(srcImage.n_rows, srcImage.n_cols);
+
+    for (uint x = 0; x < srcImage.n_rows; ++x) {
+        for (uint y = 0; y < srcImage.n_cols; ++y) {
+            uint xLen = min(uint(radius), x) + 1 + min(uint(radius), (srcImage.n_rows - 1) - x);
+            uint yLen = min(uint(radius), y) + 1 + min(uint(radius), (srcImage.n_cols - 1) - y);
+
+            counter.update(srcImage.submatrix(max(0, int(x) - radius), max(0, int(y) - radius), xLen, yLen));
+            result(x, y) = counter.getMedianPixel();
+            counter.reset();
+        }
+    }
+    
+    return result;
 }
 
 Image median_linear(Image srcImage, int radius) { 
     static Counter counter;
-
-    if (2 * uint(radius) > srcImage.n_rows || 2 * uint(radius) > srcImage.n_cols) {
-        return srcImage;
-    }
-
     Image result(srcImage.n_rows, srcImage.n_cols);
 
-    for (uint x = radius; x < srcImage.n_rows - radius; ++x) {
-        for (uint y = 0; y < 2 * uint(radius); ++y) {
-            counter.update(srcImage.submatrix(x - radius, y, 2 * radius + 1, 1));
+    for (uint x = 0; x < srcImage.n_rows; ++x) {
+        uint xLen = min(uint(radius), x) + 1 + min(uint(radius), (srcImage.n_rows - 1) - x);
+
+        for (uint y = 0; y < uint(radius); ++y) {
+            counter.update(srcImage.submatrix(max(0, int(x) - radius), y, xLen, 1));
         }
 
-        for (uint y = radius; y < srcImage.n_cols - radius; ++y) {
-            counter.update(srcImage.submatrix(x - radius, y + radius, 2 * radius + 1, 1));
+        for (uint y = 0; y < srcImage.n_cols; ++y) {
+            if (y + radius < srcImage.n_cols) {
+                counter.update(srcImage.submatrix(max(0, int(x) - radius), y + radius, xLen, 1));
+            }
             result(x, y) = counter.getMedianPixel();
-            counter.update(srcImage.submatrix(x - radius, y - radius, 2 * radius + 1, 1), true);
+
+            if (int(y) - radius >= 0) {
+                counter.update(srcImage.submatrix(max(0, int(x) - radius), y - radius, xLen, 1), true);
+            }
         }
 
         counter.reset();
@@ -135,36 +151,44 @@ Image median_linear(Image srcImage, int radius) {
 Image median_const(Image srcImage, int radius) {
     static Counter counter;
 
-    if (2 * uint(radius) > srcImage.n_rows || 2 * uint(radius) > srcImage.n_cols) {
-        return srcImage;
-    }
-
     std::vector <Counter> hist(srcImage.n_cols);
     Image result(srcImage.n_rows, srcImage.n_cols);
 
     for (uint y = 0; y < srcImage.n_cols; ++y) {
-        hist[y].update(srcImage.submatrix(0, y, 2 * radius, 1));
+        hist[y].update(srcImage.submatrix(0, y, radius, 1));
     }
 
-    for (uint x = radius; x < srcImage.n_rows - radius; ++x) {
-        for (uint y = 0; y < 2 * uint(radius); ++y) {
-            hist[y].update(srcImage(x + radius, y));
+    for (uint x = 0; x < srcImage.n_rows; ++x) {
+        for (uint y = 0; y < uint(radius); ++y) {
+            if (x + radius < srcImage.n_rows) {
+                hist[y].update(srcImage(x + radius, y));
+            }
             counter.update(hist[y]);
         }
 
-        for (uint y = radius; y < srcImage.n_cols - radius; ++y) {
-            hist[y + radius].update(srcImage(x + radius, y + radius));
-            counter.update(hist[y + radius]);
+        for (uint y = 0; y < srcImage.n_cols; ++y) {
+            if (y + radius < srcImage.n_cols) {
+                if (x + radius < srcImage.n_rows) {
+                    hist[y + radius].update(srcImage(x + radius, y + radius));
+                }
+                counter.update(hist[y + radius]);
+            }
 
             result(x, y) = counter.getMedianPixel();
 
-            counter.update(hist[y - radius], true);
-            hist[y - radius].update(srcImage(x - radius, y - radius), true);
+            if (int(y) - radius >= 0) {
+                counter.update(hist[y - radius], true);
+                if (int(x) - radius >= 0) {
+                    hist[y - radius].update(srcImage(x - radius, y - radius), true);
+                }
+            }
         }
 
-        for (uint dy = 0; dy < 2 * uint(radius); ++dy) {
+        for (uint dy = 0; dy < uint(radius); ++dy) {
             uint y = srcImage.n_cols - dy - 1;
-            hist[y].update(srcImage(x - radius, y), true);
+            if (int(x) - radius >= 0) {
+                hist[y].update(srcImage(x - radius, y), true);
+            }
         }
 
         counter.reset();

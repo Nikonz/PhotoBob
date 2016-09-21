@@ -17,12 +17,3 @@ private:
     double sum = 0;
 };
 
-class MedianOperator {
-public:
-    const uint radius;
-
-    MedianOperator(uint _radius);
-    ~MedianOperator();
-
-    Pixel operator() (Image subImage) const; 
-};

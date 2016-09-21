@@ -211,7 +211,7 @@ Matrix<ValueT>::unary_map(UnaryMatrixOperator &op) const
     if (n_cols * n_rows == 0)
         return Matrix<ReturnT>(0, 0);
 
-    Matrix<ReturnT> tmp(n_rows, n_cols);
+    Matrix<ReturnT> tmp(this->deep_copy());
 
     const auto radius = op.radius;
     const auto size = 2 * radius + 1;
