@@ -8,10 +8,11 @@ using std::min;
 using std::max;
 
 ConvolutionOperator::ConvolutionOperator(Matrix<double>& _kernel, bool normalize, bool _bounds) :
-    radius(_kernel.n_rows / 2), kernel(_kernel.deep_copy()), bounds(_bounds)
+    radiusX(_kernel.n_rows / 2), radiusY(_kernel.n_cols / 2),
+    kernel(_kernel.deep_copy()), bounds(_bounds)
 {
-    assert(kernel.n_rows == kernel.n_cols);
     assert(kernel.n_rows & 1);
+    assert(kernel.n_cols & 1);
 
     double sum = 0;
     for (uint i = 0; i < kernel.n_rows; ++i) {

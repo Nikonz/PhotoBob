@@ -114,18 +114,25 @@ Image autocontrast(Image src_image, double fraction) {
 Image gaussian(Image srcImage, double sigma, int radius)  {
     Matrix<double> kernel(2 * radius + 1, 2 * radius + 1);
 
-    double k = 1. / (2 * sqr(sigma));
     for (int x = 0; x < 2 * radius + 1; ++x) {
         for (int y = 0; y < 2 * radius + 1; ++y) {
-            kernel(x, y) = (k / M_PI) * exp(-(sqr(radius - x) + sqr(radius - y)) / (2 * sqr(sigma)));
+            kernel(x, y) = gaussElem(sigma, radius - x, radius - y);
         }
     }
 
     return custom(srcImage, kernel);
 }
 
-Image gaussian_separable(Image src_image, double sigma, int radius) {
-    return src_image;
+Image gaussian_separable(Image srcImage, double sigma, int radius) {
+    Matrix<double> kerX(2 * radius + 1, 1);
+    Matrix<double> kerY(1, 2 * radius + 1);
+
+    for (int i = 0; i < 2 * radius + 1; ++i) {
+        kerX(i, 0) = gaussElem(sigma, radius - i);
+        kerY(0, i) = gaussElem(sigma, radius - i);
+    }
+
+    return custom(custom(srcImage, kerX), kerY);
 }
 
 Image median(Image srcImage, int radius) {

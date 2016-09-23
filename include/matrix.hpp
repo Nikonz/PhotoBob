@@ -175,58 +175,32 @@ const Matrix<ValueT> Matrix<ValueT>::submatrix(uint prow, uint pcol,
 template<typename ValueT>
 template<typename UnaryMatrixOperator>
 Matrix<typename std::result_of<UnaryMatrixOperator(Matrix<ValueT>)>::type>
-Matrix<ValueT>::unary_map(const UnaryMatrixOperator &op) const
+Matrix<ValueT>::unary_map(UnaryMatrixOperator &op) const
 {
     // Let's typedef return type of function for ease of usage
     typedef typename std::result_of<UnaryMatrixOperator(Matrix<ValueT>)>::type ReturnT;
     if (n_cols * n_rows == 0)
         return Matrix<ReturnT>(0, 0);
 
-    Matrix<ReturnT> tmp(n_rows, n_cols);
-
-    const auto radius = op.radius;
-    const auto size = 2 * radius + 1;
-
-    const auto start_i = radius;
-    const auto end_i = n_rows - radius;
-    const auto start_j = radius;
-    const auto end_j = n_cols - radius;
-
-
-    for (uint i = start_i; i < end_i; ++i) {
-        for (uint j = start_j; j < end_j; ++j) {
-            auto neighbourhood = submatrix(i - radius, j - radius, size, size);
-            tmp(i, j) = op(neighbourhood);
-        }
-    }
-    return tmp;
-}
-
-template<typename ValueT>
-template<typename UnaryMatrixOperator>
-Matrix<typename std::result_of<UnaryMatrixOperator(Matrix<ValueT>)>::type>
-Matrix<ValueT>::unary_map(UnaryMatrixOperator &op) const
-{
-    typedef typename std::result_of<UnaryMatrixOperator(Matrix<ValueT>)>::type ReturnT;
-    if (n_cols * n_rows == 0)
-        return Matrix<ReturnT>(0, 0);
-
     Matrix<ReturnT> tmp(this->deep_copy());
 
-    const auto radius = op.radius;
-    const auto size = 2 * radius + 1;
+    const auto radX = op.radiusX;
+    const auto radY = op.radiusY;
+    const auto height = 2 * radX + 1;
+    const auto width  = 2 * radY + 1;
 
-    const auto start_i = radius;
-    const auto end_i = n_rows - radius;
-    const auto start_j = radius;
-    const auto end_j = n_cols - radius;
+    const auto start_i = radX;
+    const auto end_i = n_rows - radX;
+    const auto start_j = radY;
+    const auto end_j = n_cols - radY;
 
 
     for (uint i = start_i; i < end_i; ++i) {
         for (uint j = start_j; j < end_j; ++j) {
-            auto neighbourhood = submatrix(i - radius, j - radius, size, size);
+            auto neighbourhood = submatrix(i - radX, j - radY, height, width);
             tmp(i, j) = op(neighbourhood);
         }
     }
     return tmp;
 }
+

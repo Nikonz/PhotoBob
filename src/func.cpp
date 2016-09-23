@@ -27,6 +27,11 @@ static Shift makeShift(int x0, int y0, int x1, int y1) {
     return make_pair(mp(x0, y0), mp(x1, y1));
 }
 
+double gaussElem(double sigma, int dx, int dy) {
+    double k = 1. / (2 * sqr(sigma) * M_PI);
+    return (k * exp(-(sqr(dx) + sqr(dy)) / (2 * sqr(sigma))));
+}
+
 void weakSetGradType(Matrix <GradType> gradMap, Matrix <bool> used, const Size size, const Position pos) {
     static int kx[8] = {-1, -1, -1, 0, 1, 1,  1,  0};
     static int ky[8] = {-1,  0,  1, 1, 1, 0, -1, -1};

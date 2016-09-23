@@ -11,7 +11,8 @@ using Gradient = std::pair<double, double>;
 
 class ConvolutionOperator {
 public:
-    const uint radius;
+    const uint radiusX;
+    const uint radiusY;
 
     ConvolutionOperator(Matrix<double>& kernel, bool normalize, bool bounds);
     ~ConvolutionOperator();
@@ -25,7 +26,8 @@ private:
 
 class RemoveNoMaxOperator {
 public:
-    static const uint radius = 1;
+    static const uint radiusX = 1;
+    static const uint radiusY = 1;
 
     RemoveNoMaxOperator();
     ~RemoveNoMaxOperator();

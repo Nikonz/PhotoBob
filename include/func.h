@@ -46,6 +46,8 @@ static const double FAKE_BRD = 0.025; // * 100%
 
 void weakSetGradType(Matrix <GradType> gradMap, Matrix <bool> used, const Size size, const Position pos);
 
+double gaussElem(double sigma, int dx, int dy = 0);
+
 void  pixelMul(Pixel& pixel, double valR, double valG, double valB);
 void  pixelMul(Pixel& pixel, double value);
 Pixel pixelSum(const Image image);
