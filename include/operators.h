@@ -2,18 +2,33 @@
 
 #include "matrix.h"
 #include "io.h"
+#include <cmath>
+
+#define value first
+#define angle second
+
+using Gradient = std::pair<double, double>;
 
 class ConvolutionOperator {
 public:
     const uint radius;
 
-    ConvolutionOperator(Matrix<double>& _kernel);
+    ConvolutionOperator(Matrix<double>& kernel, bool normalize, bool bounds);
     ~ConvolutionOperator();
 
     Pixel operator() (Image subImage) const;
 
 private:
-    const Matrix<double> kernel;
-    double sum = 0;
+    Matrix<double> kernel;
+    const bool bounds;
 };
 
+class RemoveNoMaxOperator {
+public:
+    static const uint radius = 1;
+
+    RemoveNoMaxOperator();
+    ~RemoveNoMaxOperator();
+
+    Gradient operator() (Matrix<Gradient> grad);
+};

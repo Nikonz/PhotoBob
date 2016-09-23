@@ -17,7 +17,7 @@ Image gray_world(Image src_image);
 
 Image resize(Image src_image, double scale);
 
-Image custom(Image src_image, Matrix<double> kernel);
+Image custom(Image src_image, Matrix<double> kernel, bool normalize = true, bool bounds = true);
 
 Image autocontrast(Image src_image, double fraction);
 

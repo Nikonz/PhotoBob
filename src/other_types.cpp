@@ -15,29 +15,29 @@ Counter::Counter(Counter& counter) : sum(counter.sum) {
 
 Counter::~Counter() {};
 
-void Counter::update(const Pixel pixel, const bool remove) {
-    assert(!remove || sum > 0);
+void Counter::update(const Pixel pixel, const bool action) {
+    assert(action != REMOVE || sum > 0);
 
-    int value = (remove ? -1 : 1);
+    int value = (action == REMOVE ? -1 : 1);
     count[RED  ][colorGet(pixel, RED)]   += value;
     count[GREEN][colorGet(pixel, GREEN)] += value;
     count[BLUE ][colorGet(pixel, BLUE)]  += value;
     sum += value;
 }
 
-void Counter::update(const Image image, const bool remove) {
+void Counter::update(const Image image, const bool action) {
     for (uint x = 0; x < image.n_rows; ++x) {
         for (uint y = 0; y < image.n_cols; ++y) {
-            update(image(x, y), remove);            
+            update(image(x, y), action);
         }
     }
 }
 
-void Counter::update(const Counter& counter, const bool remove) {
-    uint value = (remove ? -1 : 1);
+void Counter::update(const Counter& counter, const bool action) {
+    uint value = (action ? -1 : 1);
     for (uint color = RED; color <= BLUE; ++color) {
         for (uint lvl = 0; lvl < MAX_LVL; ++lvl) {
-            assert(!remove || count[color][lvl] >= counter.count[color][lvl]);
+            assert(action != REMOVE || count[color][lvl] >= counter.count[color][lvl]);
             count[color][lvl] += counter.count[color][lvl] * value;
         }
     }

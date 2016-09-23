@@ -27,6 +27,32 @@ static Shift makeShift(int x0, int y0, int x1, int y1) {
     return make_pair(mp(x0, y0), mp(x1, y1));
 }
 
+void weakSetGradType(Matrix <GradType> gradMap, Matrix <bool> used, const Size size, const Position pos) {
+    static int kx[8] = {-1, -1, -1, 0, 1, 1,  1,  0};
+    static int ky[8] = {-1,  0,  1, 1, 1, 0, -1, -1};
+
+    assert(gradMap(pos.x, pos.y) == WEAK);
+    used(pos.x, pos.y) = true;
+
+    for (int i = 0; i < 8; ++i) {
+        int x = pos.x + kx[i];
+        int y = pos.y + ky[i];
+        if (x < 0 || uint(x) >= size.x || y < 0 || uint(y) >= size.y) {
+            continue;
+        }
+
+        if (gradMap(x, y) == WEAK && !used(x, y)) {
+            weakSetGradType(gradMap, used, size, make_pair(x, y));
+        }
+        if (gradMap(x, y) == STRONG) {
+            gradMap(pos.x, pos.y) = STRONG;
+            return;
+        }
+    }
+
+    gradMap(pos.x, pos.y) = EMPTY;
+}
+
 void pixelMul(Pixel& pixel, double valR, double valG, double valB) {
     colorMul(pixel, RED,   valR);
     colorMul(pixel, GREEN, valG);
@@ -81,7 +107,7 @@ static void updateWH(uint& w, uint& h, const Shift shift) {
 
 static uint pixelDiff(Pixel a, Pixel b, Metrics mtype) {
     return (mtype == MSE ? 
-        sqr(ilevelGet(a) - ilevelGet(b)) :
+        sqr(levelGet(a) - levelGet(b)) :
         levelGet(a) * levelGet(b)
     );
 }

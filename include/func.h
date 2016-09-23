@@ -10,12 +10,14 @@
 
 #define _colorSet(pixel, color, value) std::get<color>(pixel) = uint(value)
 #define colorSet(pixel, color, value)  _colorSet(pixel, color, std::min(255, std::max(0, int(value))))
+#define levelSet(pixel, value) \
+    colorSet(pixel, RED, value), \
+    colorSet(pixel, GREEN, value), \
+    colorSet(pixel, BLUE, value)
+    
 
-#define colorGet(pixel, color) uint(std::get<color>(pixel))
+#define colorGet(pixel, color) int(std::get<color>(pixel))
 #define levelGet(pixel)        colorGet(pixel, 0) 
-
-#define icolorGet(pixel, color) int(colorGet(pixel, color))
-#define ilevelGet(pixel)        int(levelGet(pixel))
 
 #define colorMul(pixel, color, value) colorSet(pixel, color, round(colorGet(pixel, color) * (value)))
 
@@ -29,8 +31,9 @@ using Position    = std::pair< uint, uint >;
 using SingleShift = std::pair< int, int >;
 using Shift       = std::pair< SingleShift, SingleShift >;
 
-enum Metrics {MSE, CCORR};
-enum Colors {RED, GREEN, BLUE};
+enum Metrics  {MSE, CCORR};
+enum Colors   {RED, GREEN, BLUE};
+enum GradType {EMPTY, WEAK, STRONG};
 
 const uint MAX_LVL = 256;
 const uint DEF_CLR = 0;
@@ -40,6 +43,8 @@ static const uint   INF  = uint(1e9);
 static const uintl  INFL = uintl(1e14);
 static const double EPS  = 1e-8;
 static const double FAKE_BRD = 0.025; // * 100%
+
+void weakSetGradType(Matrix <GradType> gradMap, Matrix <bool> used, const Size size, const Position pos);
 
 void  pixelMul(Pixel& pixel, double valR, double valG, double valB);
 void  pixelMul(Pixel& pixel, double value);

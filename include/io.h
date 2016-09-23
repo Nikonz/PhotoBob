@@ -5,7 +5,7 @@
 
 #include <tuple>
 
-using Pixel = std::tuple <uint, uint, uint>;
+using Pixel = std::tuple <int, int, int>;
 using Image = Matrix <Pixel>;
 
 Image load_image(const char*);
