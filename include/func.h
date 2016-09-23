@@ -13,8 +13,7 @@
 #define levelSet(pixel, value) \
     colorSet(pixel, RED, value), \
     colorSet(pixel, GREEN, value), \
-    colorSet(pixel, BLUE, value)
-    
+    colorSet(pixel, BLUE, value)    
 
 #define colorGet(pixel, color) int(std::get<color>(pixel))
 #define levelGet(pixel)        colorGet(pixel, 0) 
@@ -51,9 +50,9 @@ double gaussElem(double sigma, int dx, int dy = 0);
 void  pixelMul(Pixel& pixel, double valR, double valG, double valB);
 void  pixelMul(Pixel& pixel, double value);
 Pixel pixelSum(const Image image);
+Pixel pixelLinearDiff(const Pixel& a, const Pixel& b);
 
-uint  getMedianLvl  (const uint (&count)[MAX_LVL], const uint median);
-Pixel getMedianPixel(const uint (&count)[3][MAX_LVL], const uint median);
+uint  getKthLvl  (const uint (&count)[MAX_LVL], const uint median);
 
 Shift bestShift(const Image& R, const Image& G, const Image& B, const Metrics mtype);
 Image unit     (const Image& R, const Image& G, const Image& B, const Shift& shift);

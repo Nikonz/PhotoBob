@@ -14,6 +14,7 @@ public:
     void update(const Counter& counter, const bool action);
     void reset();
 
+    Pixel getPixel(double fraction);
     Pixel getMedianPixel();
 private:
     uint count[3][MAX_LVL];

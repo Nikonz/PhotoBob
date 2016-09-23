@@ -34,6 +34,8 @@ Image align(Image srcImage, bool isPostprocessing, std::string postprocessingTyp
             result = gray_world(result);
         } else if (postprocessingType == "--unsharp") {
             result = unsharp(result);
+        } else if (postprocessingType == "--autocontrast") {
+            result = autocontrast(result, fraction);
         }
     }
 
@@ -107,8 +109,28 @@ Image custom(Image srcImage, Matrix<double> kernel, bool normalize, bool bounds)
     return srcImage.unary_map(op);
 }
 
-Image autocontrast(Image src_image, double fraction) {
-    return src_image;
+Image autocontrast(Image srcImage, double fraction) {
+    Counter counter;
+    counter.update(srcImage, ADD);
+
+    Pixel pixMax = counter.getPixel(1 - fraction);
+    Pixel pixMin = counter.getPixel(fraction);
+    Pixel radius = pixelLinearDiff(pixMax, pixMin);
+
+    Image result(srcImage.n_rows, srcImage.n_cols);
+    for (uint x = 0; x < srcImage.n_rows; ++x) {
+        for (uint y = 0; y < srcImage.n_cols; ++y) {
+            Pixel diff = pixelLinearDiff(srcImage(x, y), pixMin);
+            colorMul(diff, RED  , 255. / colorGet(radius, RED  ));
+            colorMul(diff, GREEN, 255. / colorGet(radius, GREEN));
+            colorMul(diff, BLUE , 255. / colorGet(radius, BLUE ));
+
+            result(x, y) = diff;
+            assert(colorGet(diff, RED) < 256);
+        }
+    }
+
+    return result;
 }
 
 Image gaussian(Image srcImage, double sigma, int radius)  {

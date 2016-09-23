@@ -68,24 +68,22 @@ void pixelMul(Pixel& pixel, double value) {
     pixelMul(pixel, value, value, value);
 }
 
-uint getMedianLvl(const uint (&count)[MAX_LVL], const uint median) {
+Pixel pixelLinearDiff(const Pixel& a, const Pixel& b) {
+    return Pixel(colorGet(a, RED  ) - colorGet(b, RED),
+                 colorGet(a, GREEN) - colorGet(b, GREEN),
+                 colorGet(a, BLUE ) - colorGet(b, BLUE));
+}
+
+uint getKthLvl(const uint (&count)[MAX_LVL], const uint value) {
     uint sum = 0;
     for (uint lvl = 0; lvl < MAX_LVL; ++lvl) {
         sum += count[lvl];
-        if (sum > median) {
+        if (sum > value) {
             return lvl;
         } 
     }
 
     return 255;
-}
-
-Pixel getMedianPixel(const uint (&count)[3][MAX_LVL], const uint median) {
-    uint res[3];
-    for (uint color = RED; color <= BLUE; ++color) {
-        res[color] = getMedianLvl(count[color], median);
-    }
-    return Pixel(res[RED], res[GREEN], res[BLUE]);
 }
 
 Pixel pixelSum(const Image image) {

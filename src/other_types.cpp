@@ -49,11 +49,15 @@ void Counter::reset() {
     sum = 0;
 }
 
-Pixel Counter::getMedianPixel() {
+Pixel Counter::getPixel(double fraction) {
     uint res[3];
     for (uint color = RED; color <= BLUE; ++color) {
-        res[color] = getMedianLvl(count[color], sum / 2);
+        res[color] = getKthLvl(count[color], round(sum * fraction));
     }
     return Pixel(res[RED], res[GREEN], res[BLUE]);
+}
+
+Pixel Counter::getMedianPixel() {
+    return getPixel(0.5);
 }
 
